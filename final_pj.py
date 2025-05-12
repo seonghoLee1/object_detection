@@ -13,7 +13,7 @@ class YOLOv5Webcam:
         print("모델 로드 완료")
         
         # 웹캠 연결
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(1)
         if not self.cap.isOpened():
             raise Exception("웹캠을 열 수 없습니다. 카메라가 연결되어 있는지 확인하세요.")
         print("웹캠 연결 성공")
@@ -29,10 +29,10 @@ class YOLOv5Webcam:
         self.image_counter = 0
 
         # MySQL 연결 설정
-        self.db_config = db_config or {
+        self.db_config = {
             'host': 'localhost',
             'user': 'root',
-            'password': 'a12345',  # 비밀번호 수정 필요
+            'password': 'a12345',  
             'database': 'object_detection'
         }
         
@@ -46,7 +46,6 @@ class YOLOv5Webcam:
             raise
 
     def save_image(self, frame):
-        """이미지를 지정된 폴더에 저장합니다."""
         image_filename = os.path.join(self.save_folder, f"captured_image_{self.image_counter}.jpg")
         cv2.imwrite(image_filename, frame)
         print(f"이미지 저장: {image_filename}")
@@ -55,7 +54,6 @@ class YOLOv5Webcam:
         return image_filename
 
     def detect_and_render(self, frame):
-        """YOLOv5 모델을 사용하여 객체를 탐지하고 결과를 이미지에 렌더링합니다."""
         results = self.model(frame)
         results.render()
         object_names = []
@@ -64,7 +62,6 @@ class YOLOv5Webcam:
         return results.ims[0], object_names
 
     def save_to_database(self, image_path, object_names):
-        """이미지 경로와 탐지된 객체를 데이터베이스에 저장합니다."""
         capture_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         for object_name in object_names:
             query = "INSERT INTO captured_images (image_path, object_name, capture_time) VALUES (%s, %s, %s)"
@@ -75,10 +72,9 @@ class YOLOv5Webcam:
                 print(f"데이터베이스에 저장: {image_path}, 객체: {object_name}")
             except pymysql.MySQLError as err:
                 print(f"데이터베이스 오류: {err}")
-                self.db_connection.rollback()  # 오류 발생 시 롤백
+                self.db_connection.rollback() 
 
     def run(self):
-        """웹캠을 통해 객체 탐지 및 이미지 캡처를 실행합니다."""
         try:
             while True:
                 ret, frame = self.cap.read()
@@ -115,16 +111,7 @@ class YOLOv5Webcam:
 
 if __name__ == "__main__":
     # YOLOv5Webcam 객체 생성
-    yolo_webcam = YOLOv5Webcam(
-        model_size='yolov5s',
-        save_folder="captured_images",
-        db_config={
-            'host': 'localhost',
-            'user': 'root',
-            'password': 'a12345',  # 실제 비밀번호로 수정
-            'database': 'object_detection'
-        }
-    )
+    yolo_webcam = YOLOv5Webcam()
     
     # 웹캠 실행
     yolo_webcam.run()
